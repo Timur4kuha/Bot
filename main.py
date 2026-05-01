@@ -7,31 +7,26 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command
 
-# 🔑 Токен (лучше через переменные окружения)
-TOKEN = os.getenv("BOT_TOKEN") or "8730730499:AAHD8XSd7DeFidMP1ogi5rJoUOY0erI0psgv"
+# 🔑 Токен (вставь сюда свой)
+TOKEN = "8730730499:AAHD8XSd7DeFidMP1ogi5rJoUOY0erI0psg"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 DATA_FILE = "users.json"
-COOLDOWN = 10  # секунд между заданиями
+COOLDOWN = 10
 
-# 📡 Каналы
 CHANNELS = [
     {"id": -1003877994893, "link": "https://t.me/+Hs8CEusLEvc1YjYx"},
     {"id": -1003981236439, "link": "https://t.me/+-gBUqAHwj7I4Y2My"},
 ]
 
-# -------------------- 💾 ДАННЫЕ --------------------
-
+# 📁 Данные
 def load_data():
     if not os.path.exists(DATA_FILE):
         return {}
-    try:
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return {}
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
 
 def save_data(data):
     with open(DATA_FILE, "w") as f:
@@ -42,10 +37,7 @@ def get_user(user_id):
     user_id = str(user_id)
 
     if user_id not in data:
-        data[user_id] = {
-            "balance": 0,
-            "last_claim": 0
-        }
+        data[user_id] = {"balance": 0, "last_claim": 0}
         save_data(data)
 
     return data[user_id]
@@ -68,8 +60,7 @@ def set_last_claim(user_id):
     data[str(user_id)]["last_claim"] = time.time()
     save_data(data)
 
-# -------------------- 🔐 ПОДПИСКА --------------------
-
+# 🔐 Подписка
 async def check_sub(user_id):
     for channel in CHANNELS:
         try:
@@ -101,8 +92,7 @@ async def check_sub_handler(callback):
     else:
         await callback.message.answer("❌ Подпишись на все каналы!")
 
-# -------------------- 🧠 КНОПКИ --------------------
-
+# 🧠 Клава
 main_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="💰 Заработать балл")],
@@ -112,23 +102,21 @@ main_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-# -------------------- 🚀 СТАРТ --------------------
-
+# 🚀 Старт
 @dp.message(Command("start"))
 async def start(message: Message):
     if not await check_sub(message.from_user.id):
-        await message.answer("❗ Подпишись на каналы:", reply_markup=get_sub_keyboard())
+        await message.answer("❗ Подпишись:", reply_markup=get_sub_keyboard())
         return
 
     get_user(message.from_user.id)
 
     await message.answer(
-        "Привет! Я Teen Money Star Bot!\nЗарабатывай баллы 👇",
+        "Привет! Зарабатывай баллы 👇",
         reply_markup=main_keyboard
     )
 
-# -------------------- 💰 ЗАРАБОТОК --------------------
-
+# 💰 Заработать
 @dp.message(F.text == "💰 Заработать балл")
 async def earn(message: Message):
     user = get_user(message.from_user.id)
@@ -146,14 +134,13 @@ async def earn(message: Message):
         return
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📲 Перейти к заданию", url="ТВОЯ_ССЫЛКА")],
+        [InlineKeyboardButton(text="📲 Перейти", url="https://example.com")],
         [InlineKeyboardButton(text="✅ Я выполнил", callback_data="done_task")]
     ])
 
-    await message.answer("📋 Выполни задание и нажми кнопку:", reply_markup=kb)
+    await message.answer("📋 Выполни задание:", reply_markup=kb)
 
-# -------------------- ✅ ВЫПОЛНИЛ --------------------
-
+# ✅ Выполнил
 @dp.callback_query(F.data == "done_task")
 async def done_task(callback):
     user_id = callback.from_user.id
@@ -170,8 +157,7 @@ async def done_task(callback):
 
     await callback.message.answer("⭐ Балл начислен!")
 
-# -------------------- 💳 БАЛАНС --------------------
-
+# 💳 Баланс
 @dp.message(F.text == "💳 Мой баланс")
 async def balance(message: Message):
     if not await check_sub(message.from_user.id):
@@ -181,12 +167,11 @@ async def balance(message: Message):
     bal = get_balance(message.from_user.id)
     await message.answer(f"💰 Баланс: {bal}")
 
-# -------------------- 🛒 МАГАЗИН --------------------
-
+# 🛒 Магазин
 def shop_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="⭐ Купить звезды", callback_data="stars")],
-        [InlineKeyboardButton(text="💎 Telegram Premium", callback_data="premium")]
+        [InlineKeyboardButton(text="💎 Premium", callback_data="premium")]
     ])
 
 @dp.message(F.text == "🛒 Магазин")
@@ -199,14 +184,13 @@ async def shop(message: Message):
 
 @dp.callback_query(F.data == "stars")
 async def stars(callback):
-    await callback.message.answer("⭐ В разработке")
+    await callback.message.answer("Скоро будет")
 
 @dp.callback_query(F.data == "premium")
 async def premium(callback):
-    await callback.message.answer("💎 В разработке")
+    await callback.message.answer("Скоро будет")
 
-# -------------------- ▶️ ЗАПУСК --------------------
-
+# ▶️ Запуск
 async def main():
     print("Бот запущен...")
     await dp.start_polling(bot)
