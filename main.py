@@ -8,7 +8,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, R
 from aiogram.filters import Command
 
 # 🔑 Токен (лучше через переменные окружения)
-TOKEN = os.getenv("BOT_TOKEN") or "ТВОЙ_ТОКЕН"
+TOKEN = os.getenv("BOT_TOKEN") or "8730730499:AAHD8XSd7DeFidMP1ogi5rJoUOY0erI0psgv"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
