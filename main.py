@@ -9,7 +9,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, R
 from aiogram.filters import Command
 
 # 🔑 Токен
-TOKEN = "8730730499:AAHD8XSd7DeFidMP1ogi5rJoUOY0erI0psg"
+TOKEN = "ТВОЙ_ТОКЕН"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -18,6 +18,7 @@ DATA_FILE = "users.json"
 COOLDOWN = 10
 
 API_URL = "https://earnball.onrender.com"
+SITE_URL = "https://tumrik.github.io/serverrr/"
 
 CHANNELS = [
     {"id": -1003877994893, "link": "https://t.me/+Hs8CEusLEvc1YjYx"},
@@ -105,7 +106,7 @@ main_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-# 🚀 Старт (сюда приходит click_id)
+# 🚀 СТАРТ (с проверкой click_id)
 @dp.message(Command("start"))
 async def start(message: Message):
     args = message.text.split()
@@ -121,6 +122,8 @@ async def start(message: Message):
                 requests.post(f"{API_URL}/use/{click_id}")
 
                 add_balance(message.from_user.id, 1)
+                set_last_claim(message.from_user.id)
+
                 await message.answer("⭐ Балл начислен!")
             else:
                 await message.answer("❌ Задание не засчитано")
@@ -135,7 +138,10 @@ async def start(message: Message):
 
     get_user(message.from_user.id)
 
-    await message.answer("Привет! Зарабатывай баллы 👇", reply_markup=main_keyboard)
+    await message.answer(
+        "Привет! Зарабатывай баллы 👇",
+        reply_markup=main_keyboard
+    )
 
 # 💰 Заработать
 @dp.message(F.text == "💰 Заработать балл")
@@ -163,10 +169,10 @@ async def earn(message: Message):
             "user_id": message.from_user.id
         })
     except:
-        await message.answer("Ошибка сервера")
+        await message.answer("⚠️ Ошибка сервера")
         return
 
-    task_link = f"{API_URL}?click_id={click_id}"
+    task_link = f"{SITE_URL}?click_id={click_id}"
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📲 Перейти", url=task_link)]
