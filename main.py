@@ -2,12 +2,13 @@ import asyncio
 import json
 import os
 import time
+import requests
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command
 
-# 🔑 Токен (вставь сюда свой)
+# 🔑 Токен
 TOKEN = "8730730499:AAHD8XSd7DeFidMP1ogi5rJoUOY0erI0psg"
 
 bot = Bot(token=TOKEN)
@@ -15,6 +16,8 @@ dp = Dispatcher()
 
 DATA_FILE = "users.json"
 COOLDOWN = 10
+
+API_URL = "https://earnball.onrender.com"
 
 CHANNELS = [
     {"id": -1003877994893, "link": "https://t.me/+Hs8CEusLEvc1YjYx"},
@@ -102,19 +105,37 @@ main_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-# 🚀 Старт
+# 🚀 Старт (сюда приходит click_id)
 @dp.message(Command("start"))
 async def start(message: Message):
+    args = message.text.split()
+
+    # если пришёл с сайта
+    if len(args) > 1:
+        click_id = args[1]
+
+        try:
+            res = requests.get(f"{API_URL}/check/{click_id}").json()
+
+            if res.get("valid"):
+                requests.post(f"{API_URL}/use/{click_id}")
+
+                add_balance(message.from_user.id, 1)
+                await message.answer("⭐ Балл начислен!")
+            else:
+                await message.answer("❌ Задание не засчитано")
+
+        except:
+            await message.answer("⚠️ Ошибка проверки")
+
+    # обычный старт
     if not await check_sub(message.from_user.id):
         await message.answer("❗ Подпишись:", reply_markup=get_sub_keyboard())
         return
 
     get_user(message.from_user.id)
 
-    await message.answer(
-        "Привет! Зарабатывай баллы 👇",
-        reply_markup=main_keyboard
-    )
+    await message.answer("Привет! Зарабатывай баллы 👇", reply_markup=main_keyboard)
 
 # 💰 Заработать
 @dp.message(F.text == "💰 Заработать балл")
@@ -133,29 +154,25 @@ async def earn(message: Message):
         await message.answer(f"⏳ Подожди {wait} сек")
         return
 
+    click_id = f"{message.from_user.id}_{int(time.time())}"
+
+    # создаём задание на сервере
+    try:
+        requests.post(f"{API_URL}/create_click", json={
+            "click_id": click_id,
+            "user_id": message.from_user.id
+        })
+    except:
+        await message.answer("Ошибка сервера")
+        return
+
+    task_link = f"{API_URL}?click_id={click_id}"
+
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📲 Перейти", url="https://example.com")],
-        [InlineKeyboardButton(text="✅ Я выполнил", callback_data="done_task")]
+        [InlineKeyboardButton(text="📲 Перейти", url=task_link)]
     ])
 
     await message.answer("📋 Выполни задание:", reply_markup=kb)
-
-# ✅ Выполнил
-@dp.callback_query(F.data == "done_task")
-async def done_task(callback):
-    user_id = callback.from_user.id
-    user = get_user(user_id)
-
-    now = time.time()
-
-    if now - user.get("last_claim", 0) < COOLDOWN:
-        await callback.answer("⏳ Подожди!", show_alert=True)
-        return
-
-    add_balance(user_id, 1)
-    set_last_claim(user_id)
-
-    await callback.message.answer("⭐ Балл начислен!")
 
 # 💳 Баланс
 @dp.message(F.text == "💳 Мой баланс")
@@ -166,29 +183,6 @@ async def balance(message: Message):
 
     bal = get_balance(message.from_user.id)
     await message.answer(f"💰 Баланс: {bal}")
-
-# 🛒 Магазин
-def shop_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⭐ Купить звезды", callback_data="stars")],
-        [InlineKeyboardButton(text="💎 Premium", callback_data="premium")]
-    ])
-
-@dp.message(F.text == "🛒 Магазин")
-async def shop(message: Message):
-    if not await check_sub(message.from_user.id):
-        await message.answer("❗ Сначала подпишись!", reply_markup=get_sub_keyboard())
-        return
-
-    await message.answer("🛒 Выбери:", reply_markup=shop_keyboard())
-
-@dp.callback_query(F.data == "stars")
-async def stars(callback):
-    await callback.message.answer("Скоро будет")
-
-@dp.callback_query(F.data == "premium")
-async def premium(callback):
-    await callback.message.answer("Скоро будет")
 
 # ▶️ Запуск
 async def main():
